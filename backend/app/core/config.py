@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +12,9 @@ class Settings(BaseSettings):
     secret_key: str
     access_token_expire_hours: int = 8
     activation_token_expire_days: int = 7
-    cookie_secure: bool = False
+    # The alias keeps the environment variable named COOKIE_SECURE while the
+    # attribute carries the is_ prefix the naming rules require.
+    is_cookie_secure: bool = Field(default=False, validation_alias="COOKIE_SECURE")
     upload_dir: str = "/uploads"
     max_upload_size_mb: int = 5
     max_files_per_report: int = 10
