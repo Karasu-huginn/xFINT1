@@ -24,6 +24,10 @@ def test_engine():
     admin_engine.dispose()
 
     engine = create_engine(settings.test_database_url, pool_pre_ping=True)
+    # create_all never alters an existing table, so a persistent test database would
+    # keep a stale schema forever once a model changes. Dropping first makes every run
+    # start from the models as written.
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     yield engine
     engine.dispose()
@@ -46,8 +50,11 @@ def db_session(test_engine):
     """Yield a session inside a transaction that is rolled back after the test."""
     connection = test_engine.connect()
     transaction = connection.begin()
+    # autoflush mirrors SessionLocal so endpoints run under the flush semantics they
+    # will meet in production rather than a more forgiving variant.
     session = Session(
         bind=connection,
+        autoflush=False,
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
     )
