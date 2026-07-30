@@ -1,3 +1,6 @@
+from datetime import UTC, datetime, timedelta
+
+import jwt
 import pytest
 
 from app.core.config import settings
@@ -66,6 +69,20 @@ def test_expired_token_is_rejected(monkeypatch):
     monkeypatch.setattr(settings, "access_token_expire_hours", -1)
     token = create_access_token(user_id=1, role=Role.EMPLOYEE)
     assert decode_access_token(token) is None
+
+
+@pytest.mark.parametrize("omitted_claim", ["exp", "sub", "role"])
+def test_token_missing_a_required_claim_is_rejected(omitted_claim):
+    """A validly-signed token missing any mandatory claim decodes to None."""
+    claims = {
+        "sub": "1",
+        "role": Role.MANAGER.value,
+        "exp": datetime.now(UTC) + timedelta(hours=1),
+    }
+    del claims[omitted_claim]
+    forged_token = jwt.encode(claims, settings.secret_key, algorithm="HS256")
+
+    assert decode_access_token(forged_token) is None
 
 
 def test_activation_token_hash_is_deterministic_and_not_the_input():

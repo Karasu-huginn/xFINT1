@@ -10,6 +10,7 @@ from app.core.enums import Role
 MINIMUM_PASSWORD_LENGTH = 8
 # bcrypt silently truncates beyond 72 bytes, so longer inputs are refused outright.
 MAXIMUM_PASSWORD_BYTES = 72
+REQUIRED_TOKEN_CLAIMS = ["exp", "sub", "role"]
 
 
 def hash_password(plain_password: str) -> str:
@@ -48,7 +49,15 @@ def create_access_token(user_id: int, role: Role) -> str:
 def decode_access_token(token: str) -> dict | None:
     """Return the token's claims, or None when it is invalid or expired."""
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        return jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=["HS256"],
+            # Expiry is only enforced when the claim is present, so a validly-signed
+            # token minted without one would stay valid forever. Requiring the session
+            # claims makes an absent exp a rejection instead of an exemption.
+            options={"require": REQUIRED_TOKEN_CLAIMS},
+        )
     except jwt.PyJWTError:
         return None
 

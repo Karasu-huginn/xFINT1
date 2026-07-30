@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import jwt
 import pytest
 from fastapi import Depends, FastAPI
@@ -46,6 +48,16 @@ def authenticate(client, db_session, role: Role) -> User:
     return user
 
 
+def future_expiry() -> datetime:
+    """Return an expiry timestamp an hour ahead of now."""
+    return datetime.now(UTC) + timedelta(hours=1)
+
+
+def sign_claims(claims: dict) -> str:
+    """Return the given claims signed with the application secret."""
+    return jwt.encode(claims, settings.secret_key, algorithm="HS256")
+
+
 def test_missing_cookie_is_unauthenticated(guarded_client):
     """A request with no session cookie is rejected with 401."""
     assert guarded_client.get("/whoami").status_code == 401
@@ -81,17 +93,25 @@ def test_require_roles_rejects_other_roles(guarded_client, db_session):
 
 def test_malformed_token_missing_subject_claim_is_unauthenticated(guarded_client):
     """A validly-signed token lacking 'sub' claim is rejected with 401."""
-    malformed_token = jwt.encode(
-        {"some_other_claim": "value"}, settings.secret_key, algorithm="HS256"
-    )
+    malformed_token = sign_claims({"role": Role.MANAGER.value, "exp": future_expiry()})
     guarded_client.cookies.set(SESSION_COOKIE_NAME, malformed_token)
     assert guarded_client.get("/whoami").status_code == 401
 
 
 def test_malformed_token_non_numeric_subject_is_unauthenticated(guarded_client):
     """A validly-signed token with non-numeric 'sub' is rejected with 401."""
-    malformed_token = jwt.encode(
-        {"sub": "not-a-number"}, settings.secret_key, algorithm="HS256"
+    malformed_token = sign_claims(
+        {"sub": "not-a-number", "role": Role.MANAGER.value, "exp": future_expiry()}
     )
     guarded_client.cookies.set(SESSION_COOKIE_NAME, malformed_token)
+    assert guarded_client.get("/whoami").status_code == 401
+
+
+def test_token_without_expiry_claim_is_unauthenticated(guarded_client, db_session):
+    """A validly-signed token carrying no 'exp' claim is rejected with 401."""
+    # The subject resolves to a real row on purpose: otherwise a 401 could come from
+    # the missing user rather than from the absent expiry this test exists to pin.
+    user = authenticate(guarded_client, db_session, Role.MANAGER)
+    endless_token = sign_claims({"sub": str(user.id), "role": Role.MANAGER.value})
+    guarded_client.cookies.set(SESSION_COOKIE_NAME, endless_token)
     assert guarded_client.get("/whoami").status_code == 401
