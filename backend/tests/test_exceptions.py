@@ -120,3 +120,12 @@ def test_unhandled_exception_returns_safe_error(failing_client_no_raise):
     assert response.json()["detail"] == "Internal server error"
     assert "RuntimeError" not in response.json()["detail"]
     assert "Something went wrong" not in response.json()["detail"]
+
+
+def test_http_exception_preserves_headers(failing_client):
+    """HTTPException headers (e.g. Allow) are preserved in the response."""
+    response = failing_client.post("/validate", json={"amount": 1})
+    assert response.status_code == 200
+    response = failing_client.post("/boom/notfound")
+    assert response.status_code == 405
+    assert "Allow" in response.headers

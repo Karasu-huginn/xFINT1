@@ -88,6 +88,7 @@ async def handle_http_exception(
     return JSONResponse(
         status_code=error.status_code,
         content={"detail": error.detail, "code": "http_error"},
+        headers=getattr(error, "headers", None),
     )
 
 
