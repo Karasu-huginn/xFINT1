@@ -20,6 +20,17 @@ def test_password_round_trips_through_hashing():
     assert verify_password("wrong-password", password_hash) is False
 
 
+def test_verify_password_rejects_none_hash():
+    """A None password hash fails gracefully and returns False."""
+    assert verify_password("any-password", None) is False
+
+
+def test_verify_password_rejects_malformed_hash():
+    """A malformed or corrupted hash fails gracefully and returns False."""
+    assert verify_password("password", "not-a-bcrypt-hash") is False
+    assert verify_password("password", "") is False
+
+
 def test_mandatory_grader_password_satisfies_the_policy():
     """The brief's required password must pass validation or the project fails."""
     assert is_password_acceptable(settings.seed_manager_password) is True
@@ -48,6 +59,13 @@ def test_tampered_token_is_rejected():
     """A token with a corrupted signature decodes to None rather than raising."""
     token = create_access_token(user_id=1, role=Role.EMPLOYEE)
     assert decode_access_token(token + "tampered") is None
+
+
+def test_expired_token_is_rejected(monkeypatch):
+    """An already-expired token decodes to None rather than raising."""
+    monkeypatch.setattr(settings, "access_token_expire_hours", -1)
+    token = create_access_token(user_id=1, role=Role.EMPLOYEE)
+    assert decode_access_token(token) is None
 
 
 def test_activation_token_hash_is_deterministic_and_not_the_input():

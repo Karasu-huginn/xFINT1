@@ -17,9 +17,14 @@ def hash_password(plain_password: str) -> str:
     return bcrypt.hashpw(plain_password.encode(), bcrypt.gensalt()).decode()
 
 
-def verify_password(plain_password: str, password_hash: str) -> bool:
+def verify_password(plain_password: str, password_hash: str | None) -> bool:
     """Return True when the plaintext matches the stored bcrypt hash."""
-    return bcrypt.checkpw(plain_password.encode(), password_hash.encode())
+    if not password_hash:
+        return False
+    try:
+        return bcrypt.checkpw(plain_password.encode(), password_hash.encode())
+    except ValueError:
+        return False
 
 
 def is_password_acceptable(plain_password: str) -> bool:
