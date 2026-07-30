@@ -1,21 +1,40 @@
+# Every variable below carries a working development default, so `docker compose up`
+# succeeds on a clean checkout with no .env file. Compose still reads a root .env
+# automatically for interpolation, so creating one overrides any of these.
 services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: "${POSTGRES_USER:-xfint1}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change_me}"
+      POSTGRES_DB: "${POSTGRES_DB:-xfint1}"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-xfint1} -d ${POSTGRES_DB:-xfint1}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
 
   api:
     build: ./backend
-    env_file: .env
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg://xfint1:change_me@db:5432/xfint1}"
+      TEST_DATABASE_URL: "${TEST_DATABASE_URL:-postgresql+psycopg://xfint1:change_me@db:5432/xfint1_test}"
+      SECRET_KEY: "${SECRET_KEY:-dev_only_change_me_not_a_real_secret}"
+      ACCESS_TOKEN_EXPIRE_HOURS: "${ACCESS_TOKEN_EXPIRE_HOURS:-8}"
+      ACTIVATION_TOKEN_EXPIRE_DAYS: "${ACTIVATION_TOKEN_EXPIRE_DAYS:-7}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      UPLOAD_DIR: "${UPLOAD_DIR:-/uploads}"
+      MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-5}"
+      MAX_FILES_PER_REPORT: "${MAX_FILES_PER_REPORT:-10}"
+      FRONTEND_ORIGIN: "${FRONTEND_ORIGIN:-http://localhost:5173}"
+      SEED_MANAGER_EMAIL: "${SEED_MANAGER_EMAIL:-manager@supherman.com}"
+      SEED_MANAGER_PASSWORD: "${SEED_MANAGER_PASSWORD:-Suph3rm4n!}"
     depends_on:
       db:
         condition: service_healthy
