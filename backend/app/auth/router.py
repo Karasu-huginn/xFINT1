@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
-from app.auth.schemas import LoginRequest
-from app.auth.service import authenticate_user
+from app.auth.schemas import ActivationProbeResponse, ActivationRequest, LoginRequest
+from app.auth.service import (
+    activate_account,
+    authenticate_user,
+    find_usable_activation_token,
+)
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import SESSION_COOKIE_NAME, get_current_user
@@ -47,3 +51,24 @@ def log_out(response: Response) -> None:
 def read_current_user(current_user: User = Depends(get_current_user)) -> User:
     """Return the authenticated caller's account."""
     return current_user
+
+
+@router.get("/activation/{raw_token}", response_model=ActivationProbeResponse)
+def read_activation_target(
+    raw_token: str, session: Session = Depends(get_db)
+) -> ActivationProbeResponse:
+    """Report which address an activation token belongs to."""
+    token = find_usable_activation_token(session, raw_token)
+    return ActivationProbeResponse(email=token.user.email)
+
+
+@router.post("/activate", status_code=status.HTTP_204_NO_CONTENT)
+def activate(
+    payload: ActivationRequest,
+    response: Response,
+    session: Session = Depends(get_db),
+) -> None:
+    """Set the invited user's password and start their session."""
+    user = activate_account(session, payload.token, payload.password)
+    session.commit()
+    set_session_cookie(response, user)
