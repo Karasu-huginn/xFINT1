@@ -1,6 +1,7 @@
 from app.core.config import settings
 from app.core.enums import Role
-from app.core.security import is_password_acceptable
+from app.core.security import hash_password, is_password_acceptable, verify_password
+from app.users.models import User
 from app.users.service import find_user_by_email
 from seed import seed_mandatory_manager
 
@@ -52,3 +53,34 @@ def test_seeded_manager_skips_activation(db_session):
     user = find_user_by_email(db_session, "manager@supherman.com")
 
     assert user.password_hash is not None
+
+
+def test_seed_repairs_a_manager_left_without_a_password(db_session):
+    """A pre-existing row with no password hash becomes usable after seeding."""
+    unactivated_manager = User(
+        email=settings.seed_manager_email, password_hash=None, role=Role.MANAGER
+    )
+    db_session.add(unactivated_manager)
+    db_session.flush()
+
+    seeded_manager = seed_mandatory_manager(db_session)
+
+    assert seeded_manager.id == unactivated_manager.id
+    assert verify_password(settings.seed_manager_password, seeded_manager.password_hash)
+
+
+def test_seed_corrects_a_wrong_role_without_touching_the_password(db_session):
+    """A pre-existing row holding the wrong role is restored to MANAGER."""
+    chosen_password_hash = hash_password("Ch0sen-by-the-owner")
+    demoted_manager = User(
+        email=settings.seed_manager_email,
+        password_hash=chosen_password_hash,
+        role=Role.EMPLOYEE,
+    )
+    db_session.add(demoted_manager)
+    db_session.flush()
+
+    seeded_manager = seed_mandatory_manager(db_session)
+
+    assert seeded_manager.role is Role.MANAGER
+    assert seeded_manager.password_hash == chosen_password_hash
