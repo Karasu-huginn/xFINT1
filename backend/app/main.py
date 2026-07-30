@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth.router import router as auth_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
+from app.users.router import router as users_router
 
 
 async def read_health() -> dict[str, str]:
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(application)
     application.add_api_route("/api/health", read_health, methods=["GET"])
     application.include_router(auth_router)
+    application.include_router(users_router)
     return application
 
 
