@@ -100,10 +100,26 @@ def test_weak_password_is_refused_at_activation(client, db_session):
     assert db_session.query(ActivationToken).one().used_at is None
 
 
-def test_minted_token_expiry_is_timezone_aware_and_honours_the_configured_window(
-    db_session,
-):
-    """A minted token expires tz-aware, activation_token_expire_days from now."""
+def test_a_weak_password_is_refused_before_the_token_is_looked_up(client, db_session):
+    """With both inputs bad the policy answers first, so the status is 400 not 404."""
+    raw_token = invite(db_session)
+    client.post(
+        "/api/auth/activate",
+        json={"token": raw_token, "password": "Ch0senPass"},
+    )
+
+    # Status precedence is the only observable consequence of running the policy
+    # check before the lookup, since the lookup itself writes nothing. Asserting an
+    # unused token after a weak password passes whichever order the two run in.
+    response = client.post(
+        "/api/auth/activate",
+        json={"token": raw_token, "password": "short"},
+    )
+    assert response.status_code == 400
+
+
+def test_minted_token_expiry_holds_under_a_non_utc_session_timezone(db_session):
+    """A minted token expires the configured days out whatever the session zone."""
     # The session timezone is deliberately not UTC. Postgres reads a timestamptz
     # back as aware whatever Python wrote, so a naive expiry passes every check
     # made under a UTC session while silently landing hours off the mark here.
@@ -112,7 +128,6 @@ def test_minted_token_expiry_is_timezone_aware_and_honours_the_configured_window
     invite(db_session)
 
     stored = db_session.query(ActivationToken).one()
-    assert stored.expires_at.tzinfo is not None
     expected_expiry = datetime.now(UTC) + timedelta(
         days=settings.activation_token_expire_days
     )
