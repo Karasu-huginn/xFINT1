@@ -43,8 +43,14 @@ def authenticate_user(session: Session, email: str, password: str) -> User:
 
 def find_usable_activation_token(session: Session, raw_token: str) -> ActivationToken:
     """Return the unconsumed, unexpired token matching the raw value."""
-    statement = select(ActivationToken).where(
-        ActivationToken.token_hash == hash_activation_token(raw_token)
+    # The row lock is what makes single-use hold under concurrent activation:
+    # used_at is tested here and written by the caller in a separate statement, so
+    # without it two requests racing on one token both read used_at as NULL and
+    # both activate. A double-clicked submit button is enough to reach that.
+    statement = (
+        select(ActivationToken)
+        .where(ActivationToken.token_hash == hash_activation_token(raw_token))
+        .with_for_update()
     )
     token = session.execute(statement).scalar_one_or_none()
     # Absent, consumed and expired all answer identically: distinguishing them
