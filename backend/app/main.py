@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.exceptions import register_exception_handlers
 
 
 async def read_health() -> dict[str, str]:
@@ -10,7 +11,7 @@ async def read_health() -> dict[str, str]:
 
 
 def create_app() -> FastAPI:
-    """Build the FastAPI application with CORS and routes registered."""
+    """Build the FastAPI application with CORS, handlers and routes registered."""
     application = FastAPI(title="SUP Herman Expense Reports", docs_url="/api/docs")
     application.add_middleware(
         CORSMiddleware,
@@ -19,6 +20,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    register_exception_handlers(application)
     application.add_api_route("/api/health", read_health, methods=["GET"])
     return application
 
