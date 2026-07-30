@@ -14,7 +14,14 @@ async def read_health() -> dict[str, str]:
 
 def create_app() -> FastAPI:
     """Build the FastAPI application with CORS, handlers and routes registered."""
-    application = FastAPI(title="SUP Herman Expense Reports", docs_url="/api/docs")
+    # Every documentation URL lives under /api because the dev server proxies that
+    # prefix and nothing else; a schema served from the root would 404 through it.
+    application = FastAPI(
+        title="SUP Herman Expense Reports",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json",
+    )
     application.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_origin],
