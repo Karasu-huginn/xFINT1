@@ -13,8 +13,14 @@ docker compose up --build
 ```
 
 No configuration step is required: every environment variable has a working
-development default. The API is then available at <http://localhost:8000>, and the
-interactive documentation at <http://localhost:8000/api/docs>.
+development default. Every route is served under the `/api` prefix:
+
+| What | URL |
+|---|---|
+| Health check | <http://localhost:8000/api/health> |
+| Interactive documentation (Swagger UI) | <http://localhost:8000/api/docs> |
+| Alternative documentation (ReDoc) | <http://localhost:8000/api/redoc> |
+| OpenAPI schema | <http://localhost:8000/api/openapi.json> |
 
 Creating a `.env` is optional and only needed to override a default:
 
