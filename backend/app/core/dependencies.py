@@ -24,7 +24,11 @@ def get_current_user(
     if claims is None:
         raise AuthenticationError("Authentication required")
 
-    user = session.get(User, int(claims["sub"]))
+    subject = claims.get("sub")
+    if subject is None or not str(subject).isdigit():
+        raise AuthenticationError("Authentication required")
+
+    user = session.get(User, int(subject))
     if user is None:
         raise AuthenticationError("Authentication required")
     return user

@@ -1,7 +1,9 @@
+import jwt
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import SESSION_COOKIE_NAME, get_current_user, require_roles
 from app.core.enums import Role
@@ -75,3 +77,21 @@ def test_require_roles_rejects_other_roles(guarded_client, db_session):
     """An employee is refused a manager-only route with 403."""
     authenticate(guarded_client, db_session, Role.EMPLOYEE)
     assert guarded_client.get("/managers-only").status_code == 403
+
+
+def test_malformed_token_missing_subject_claim_is_unauthenticated(guarded_client):
+    """A validly-signed token lacking 'sub' claim is rejected with 401."""
+    malformed_token = jwt.encode(
+        {"some_other_claim": "value"}, settings.secret_key, algorithm="HS256"
+    )
+    guarded_client.cookies.set(SESSION_COOKIE_NAME, malformed_token)
+    assert guarded_client.get("/whoami").status_code == 401
+
+
+def test_malformed_token_non_numeric_subject_is_unauthenticated(guarded_client):
+    """A validly-signed token with non-numeric 'sub' is rejected with 401."""
+    malformed_token = jwt.encode(
+        {"sub": "not-a-number"}, settings.secret_key, algorithm="HS256"
+    )
+    guarded_client.cookies.set(SESSION_COOKIE_NAME, malformed_token)
+    assert guarded_client.get("/whoami").status_code == 401
