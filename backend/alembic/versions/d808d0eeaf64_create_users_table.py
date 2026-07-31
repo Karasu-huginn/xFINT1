@@ -1,0 +1,52 @@
+"""create users table
+
+Revision ID: d808d0eeaf64
+Revises:
+Create Date: 2026-07-30 17:10:31.295866
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = "d808d0eeaf64"
+down_revision: Union[str, None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Create the users table and its unique email index."""
+    op.create_table(
+        "users",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("email", sa.String(length=255), nullable=False),
+        sa.Column("password_hash", sa.String(length=255), nullable=True),
+        sa.Column(
+            "role",
+            sa.Enum("EMPLOYEE", "MANAGER", "ACCOUNTING", name="role_enum"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
+
+
+def downgrade() -> None:
+    """Drop the users table, its email index and the role enum type."""
+    op.drop_index(op.f("ix_users_email"), table_name="users")
+    op.drop_table("users")
+    # Autogenerate creates the enum type implicitly with the table but never emits
+    # the matching DROP TYPE, so without this hand-written line the type survives a
+    # downgrade and the next upgrade fails with DuplicateObject. Every migration
+    # introducing an enum must drop it here, after the table that depends on it.
+    sa.Enum(name="role_enum").drop(op.get_bind())

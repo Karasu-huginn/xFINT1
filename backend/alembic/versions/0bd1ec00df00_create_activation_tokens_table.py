@@ -1,0 +1,48 @@
+"""create activation tokens table
+
+Revision ID: 0bd1ec00df00
+Revises: d808d0eeaf64
+Create Date: 2026-07-30 18:06:53.492491
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = "0bd1ec00df00"
+down_revision: Union[str, None] = "d808d0eeaf64"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Create the activation_tokens table and its unique token digest index."""
+    op.create_table(
+        "activation_tokens",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("token_hash", sa.String(length=64), nullable=False),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_activation_tokens_token_hash"),
+        "activation_tokens",
+        ["token_hash"],
+        unique=True,
+    )
+
+
+def downgrade() -> None:
+    """Drop the activation_tokens table and its token digest index."""
+    # This table introduces no enum, so unlike the users migration there is no
+    # implicitly created type left behind and a plain drop is already complete.
+    op.drop_index(
+        op.f("ix_activation_tokens_token_hash"), table_name="activation_tokens"
+    )
+    op.drop_table("activation_tokens")
