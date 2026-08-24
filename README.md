@@ -1,4 +1,4 @@
-# xFINT1 — SUP Herman
+# xFINT1
 
 Projet scolaire : application interne de gestion des notes de frais.
 
@@ -12,8 +12,8 @@ Projet scolaire : application interne de gestion des notes de frais.
 docker compose up --build
 ```
 
-No configuration step is required: every environment variable has a working
-development default. Every route is served under the `/api` prefix:
+No configuration step is required, every environment variable has a working development default.
+Every route is served under the `/api` prefix:
 
 | What | URL |
 |---|---|
