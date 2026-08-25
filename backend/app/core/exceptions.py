@@ -48,6 +48,20 @@ class NotFoundError(DomainError):
     code = "not_found"
 
 
+class FileTooLargeError(DomainError):
+    """Raised when an uploaded file exceeds the configured size limit."""
+
+    status_code = 413
+    code = "file_too_large"
+
+
+class UnsupportedFileTypeError(DomainError):
+    """Raised when an uploaded file is not of an accepted format."""
+
+    status_code = 415
+    code = "unsupported_file_type"
+
+
 class ConflictError(DomainError):
     """Raised when an action collides with existing state."""
 
