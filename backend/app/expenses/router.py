@@ -7,8 +7,13 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.core.enums import Role
 from app.expenses.models import ExpenseReport
-from app.expenses.schemas import ReportDetailResponse, ReportSummaryResponse
+from app.expenses.schemas import (
+    ReportDetailResponse,
+    ReportSummaryResponse,
+    StatusChangeRequest,
+)
 from app.expenses.service import (
+    apply_status_transition,
     create_report,
     get_visible_report,
     list_reports_owned_by,
@@ -77,3 +82,16 @@ def read_report(
 ) -> ExpenseReport:
     """Return one report, provided the caller is allowed to see it."""
     return get_visible_report(session, current_user, report_id)
+
+
+@reports_router.patch("/{report_id}/status", response_model=ReportDetailResponse)
+def change_report_status(
+    report_id: int,
+    payload: StatusChangeRequest,
+    session: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(Role.MANAGER, Role.ACCOUNTING)),
+) -> ExpenseReport:
+    """Validate, refuse or process a report on behalf of the caller."""
+    report = apply_status_transition(session, current_user, report_id, payload.status)
+    session.commit()
+    return report

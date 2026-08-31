@@ -69,6 +69,12 @@ class ConflictError(DomainError):
     code = "conflict"
 
 
+class TransitionNotAllowedError(ConflictError):
+    """Raised when a status change is impossible from the report's current state."""
+
+    code = "transition_not_allowed"
+
+
 async def handle_domain_error(request: Request, error: DomainError) -> JSONResponse:
     """Translate any domain error into its documented HTTP response."""
     return JSONResponse(

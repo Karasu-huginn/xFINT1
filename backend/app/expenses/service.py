@@ -1,8 +1,15 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.enums import Role, Status
-from app.core.exceptions import NotFoundError, ValidationFailedError
+from app.core.exceptions import (
+    NotFoundError,
+    PermissionDeniedError,
+    TransitionNotAllowedError,
+    ValidationFailedError,
+)
 from app.expenses.models import Attachment, ExpenseReport
 from app.storage.files import check_file_count, persist_upload
 from app.users.models import User
@@ -98,4 +105,39 @@ def get_visible_report(session: Session, viewer: User, report_id: int) -> Expens
     # activity by walking ids. Invisible and absent must be indistinguishable.
     if report is None or not is_report_visible_to(report, viewer):
         raise NotFoundError("Expense report not found")
+    return report
+
+
+# This table is the entire state machine. Nothing else in the codebase may assign
+# to ExpenseReport.status, so every rule about the lifecycle is readable here in
+# four lines rather than spread across three endpoints.
+ALLOWED_TRANSITIONS: dict[tuple[Status, Status], Role] = {
+    (Status.CREATED, Status.VALIDATED): Role.MANAGER,
+    (Status.CREATED, Status.REFUSED): Role.MANAGER,
+    (Status.VALIDATED, Status.PROCESSED): Role.ACCOUNTING,
+}
+
+
+def apply_status_transition(
+    session: Session, actor: User, report_id: int, target_status: Status
+) -> ExpenseReport:
+    """Move a report to the target status when the actor is entitled to do so."""
+    report = get_visible_report(session, actor, report_id)
+
+    required_role = ALLOWED_TRANSITIONS.get((report.status, target_status))
+    if required_role is None:
+        raise TransitionNotAllowedError(
+            f"A report cannot go from {report.status.value} to {target_status.value}"
+        )
+    if actor.role is not required_role:
+        raise PermissionDeniedError("Your role cannot make this decision")
+    # Separation of duties. The brief is silent on the case, so this is a policy
+    # decision: whoever submits a claim never approves it, managers included.
+    if report.owner_id == actor.id:
+        raise PermissionDeniedError("You cannot decide on your own expense report")
+
+    report.status = target_status
+    report.decided_by_id = actor.id
+    report.decided_at = datetime.now(UTC)
+    session.flush()
     return report
