@@ -48,11 +48,31 @@ class NotFoundError(DomainError):
     code = "not_found"
 
 
+class FileTooLargeError(DomainError):
+    """Raised when an uploaded file exceeds the configured size limit."""
+
+    status_code = 413
+    code = "file_too_large"
+
+
+class UnsupportedFileTypeError(DomainError):
+    """Raised when an uploaded file is not of an accepted format."""
+
+    status_code = 415
+    code = "unsupported_file_type"
+
+
 class ConflictError(DomainError):
     """Raised when an action collides with existing state."""
 
     status_code = 409
     code = "conflict"
+
+
+class TransitionNotAllowedError(ConflictError):
+    """Raised when a status change is impossible from the report's current state."""
+
+    code = "transition_not_allowed"
 
 
 async def handle_domain_error(request: Request, error: DomainError) -> JSONResponse:

@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import settings
 from app.core.database import Base
 from app.auth.models import ActivationToken  # noqa: F401  -- registers the table on Base
+from app.expenses.models import Attachment, ExpenseReport  # noqa: F401  -- registers the tables on Base
 from app.users.models import User  # noqa: F401  -- registers the table on Base
 
 config = context.config

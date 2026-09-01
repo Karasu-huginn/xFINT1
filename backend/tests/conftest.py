@@ -7,6 +7,13 @@ from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
 
+# Imported for their side effect of registering tables on Base.metadata, which
+# drop_all and create_all need. Importing app.main happens to do this today, which
+# is an accident this makes structural.
+from app.auth.models import ActivationToken  # noqa: F401,E402
+from app.expenses.models import Attachment, ExpenseReport  # noqa: F401,E402
+from app.users.models import User  # noqa: F401,E402
+
 
 @pytest.fixture(scope="session")
 def test_engine():

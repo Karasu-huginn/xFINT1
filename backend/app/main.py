@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth.router import router as auth_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
+from app.expenses.router import attachments_router, reports_router
 from app.users.router import router as users_router
 
 
@@ -33,6 +34,8 @@ def create_app() -> FastAPI:
     application.add_api_route("/api/health", read_health, methods=["GET"])
     application.include_router(auth_router)
     application.include_router(users_router)
+    application.include_router(reports_router)
+    application.include_router(attachments_router)
     return application
 
 
