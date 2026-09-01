@@ -141,3 +141,15 @@ def apply_status_transition(
     report.decided_at = datetime.now(UTC)
     session.flush()
     return report
+
+
+def get_visible_attachment(
+    session: Session, viewer: User, attachment_id: int
+) -> Attachment:
+    """Return an attachment whose parent report the viewer may read."""
+    attachment = session.get(Attachment, attachment_id)
+    # Visibility is re-derived from the parent report on every request. Attachment
+    # ids are sequential, so trusting the id alone would let anyone walk the volume.
+    if attachment is None or not is_report_visible_to(attachment.report, viewer):
+        raise NotFoundError("Attachment not found")
+    return attachment
