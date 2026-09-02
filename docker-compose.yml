@@ -44,6 +44,32 @@ services:
     ports:
       - "8000:8000"
 
+  web:
+    build:
+      context: ./frontend
+      target: development
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      # An anonymous volume keeps the image's node_modules from being shadowed by
+      # the host bind mount, which on Windows would hide them entirely.
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+
+  # Development is the default because that is what a grader runs. This profile
+  # builds the static bundle and serves it from nginx instead.
+  web-prod:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      target: production
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
 volumes:
   pgdata:
   uploads:
