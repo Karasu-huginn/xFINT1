@@ -30,3 +30,22 @@ export function formatFileSize(sizeBytes: number): string {
   }
   return `${(sizeKilobytes / 1024).toFixed(1)} Mo`;
 }
+
+// The API answers in English because its identifiers and messages are part of a
+// contract, not of the interface. Every response also carries a stable `code`, and
+// this map is where that code becomes the sentence a user at SUP Herman reads. A
+// page that knows its own context passes a fallback rather than leaking English.
+const ERROR_MESSAGES: Record<string, string> = {
+  unsupported_file_type: "Seuls les fichiers PDF, JPEG et PNG sont acceptés.",
+  file_too_large: "Chaque fichier doit faire 5 Mo au maximum.",
+  permission_denied: "Vous n'êtes pas autorisé à effectuer cette action.",
+  not_found: "Cet élément est introuvable ou ne vous est pas accessible.",
+  conflict: "Un compte existe déjà pour cette adresse e-mail.",
+  transition_not_allowed:
+    "Cette note a déjà été décidée, l'action n'est plus possible.",
+  internal_error: "Une erreur interne est survenue, merci de réessayer.",
+};
+
+export function describeApiError(code: string, fallbackMessage: string): string {
+  return ERROR_MESSAGES[code] ?? fallbackMessage;
+}

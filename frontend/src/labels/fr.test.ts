@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { ReportStatus, Role } from "../types/api";
-import { ROLE_LABELS, STATUS_LABELS, formatSubmissionDate } from "./fr";
+import {
+  ROLE_LABELS,
+  STATUS_LABELS,
+  describeApiError,
+  formatSubmissionDate,
+} from "./fr";
 
 const EVERY_STATUS: ReportStatus[] = [
   "CREATED",
@@ -37,5 +42,30 @@ describe("formatSubmissionDate", () => {
     expect(formatSubmissionDate("2026-09-12T08:30:00+00:00")).toMatch(
       /12\/09\/2026/,
     );
+  });
+});
+
+describe("describeApiError", () => {
+  it("translates the codes the API can return into French", () => {
+    expect(describeApiError("unsupported_file_type", "secours")).toBe(
+      "Seuls les fichiers PDF, JPEG et PNG sont acceptés.",
+    );
+    expect(describeApiError("file_too_large", "secours")).toBe(
+      "Chaque fichier doit faire 5 Mo au maximum.",
+    );
+  });
+
+  it("falls back to the page's own message for an unmapped code", () => {
+    expect(describeApiError("something_new", "Message de secours.")).toBe(
+      "Message de secours.",
+    );
+  });
+
+  it("never returns an English API detail", () => {
+    // The point of the map is that no backend sentence reaches the interface, so
+    // an unknown code must yield the caller's French fallback and nothing else.
+    const translated = describeApiError("unknown", "Repli en français.");
+
+    expect(translated).not.toMatch(/[Tt]he |accepted|required/);
   });
 });

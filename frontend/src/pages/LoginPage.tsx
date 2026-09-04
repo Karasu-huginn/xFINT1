@@ -24,8 +24,10 @@ export default function LoginPage() {
       await signIn(email, password);
     } catch (error) {
       setFailureMessage(
-        error instanceof ApiError
-          ? error.message
+        // Login is the one place a 401 has a precise meaning, so the page
+        // supplies it rather than letting the generic session message through.
+        error instanceof ApiError && error.status === 401
+          ? "Adresse e-mail ou mot de passe incorrect."
           : "Connexion impossible, merci de réessayer.",
       );
     } finally {
