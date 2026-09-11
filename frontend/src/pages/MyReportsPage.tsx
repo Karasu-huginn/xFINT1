@@ -7,6 +7,7 @@ import Button from "../components/Button";
 import ControlPanel from "../components/ControlPanel";
 import ReportListView from "../components/ReportListView";
 import ReportDialog from "../features/ReportDialog";
+import { describeEmptyReportList } from "../labels/fr";
 import type { ReportSummary } from "../types/api";
 
 export default function MyReportsPage() {
@@ -34,7 +35,11 @@ export default function MyReportsPage() {
       />
       <main className="mx-auto max-w-6xl p-4">
         {failureMessage !== null && <Alert tone="error">{failureMessage}</Alert>}
-        <ReportListView reports={reports} onSelect={setSelectedReportId} />
+        <ReportListView
+          reports={reports}
+          onSelect={setSelectedReportId}
+          emptyMessage={describeEmptyReportList("EMPLOYEE")}
+        />
       </main>
       {selectedReportId !== null && (
         <ReportDialog

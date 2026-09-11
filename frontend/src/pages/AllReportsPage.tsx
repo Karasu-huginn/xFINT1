@@ -9,7 +9,7 @@ import ControlPanel from "../components/ControlPanel";
 import ReportListView from "../components/ReportListView";
 import ReportDialog from "../features/ReportDialog";
 import { listAvailableActions } from "../features/reportActions";
-import { describeApiError } from "../labels/fr";
+import { describeApiError, describeEmptyReportList } from "../labels/fr";
 import type { ReportDetail, ReportStatus, ReportSummary } from "../types/api";
 
 export default function AllReportsPage() {
@@ -71,6 +71,7 @@ export default function AllReportsPage() {
         <ReportListView
           reports={reports}
           onSelect={setSelectedReportId}
+          emptyMessage={describeEmptyReportList(currentUser?.role ?? "MANAGER")}
           isOwnerColumnVisible
         />
       </main>

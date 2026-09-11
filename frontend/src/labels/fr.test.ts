@@ -5,6 +5,7 @@ import {
   ROLE_LABELS,
   STATUS_LABELS,
   describeApiError,
+  describeEmptyReportList,
   formatSubmissionDate,
 } from "./fr";
 
@@ -67,5 +68,22 @@ describe("describeApiError", () => {
     const translated = describeApiError("unknown", "Repli en français.");
 
     expect(translated).not.toMatch(/[Tt]he |accepted|required/);
+  });
+});
+
+describe("describeEmptyReportList", () => {
+  it("gives every role a message of its own", () => {
+    const messages = EVERY_ROLE.map(describeEmptyReportList);
+
+    expect(new Set(messages).size).toBe(EVERY_ROLE.length);
+    for (const message of messages) {
+      expect(message.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("tells accounting why the list is empty rather than only that it is", () => {
+    // The accounting list is empty by design until a manager validates something,
+    // so the message has to name that cause or it reads as a broken screen.
+    expect(describeEmptyReportList("ACCOUNTING")).toMatch(/valid/i);
   });
 });
