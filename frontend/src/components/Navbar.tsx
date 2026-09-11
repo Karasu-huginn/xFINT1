@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import { useAuth } from "../auth/useAuth";
+import { ROLE_LABELS } from "../labels/fr";
 import type { Role } from "../types/api";
 
 interface NavEntry {
@@ -46,7 +47,7 @@ export default function Navbar() {
 
   return (
     <header className="bg-primary text-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2">
         <span className="text-base font-semibold tracking-wide">SUP Herman</span>
         <button
           type="button"
@@ -63,6 +64,22 @@ export default function Navbar() {
               {entry.label}
             </NavLink>
           ))}
+          {/* Who you are signed in as. The session is one cookie per browser, so
+              logging in as somebody else silently replaces it; without this the
+              only way to tell them apart is to notice which menus disappeared. */}
+          <span
+            className="ml-3 flex items-center gap-2 border-l border-white/25 pl-3"
+            title={`${currentUser.email} (${ROLE_LABELS[currentUser.role]})`}
+          >
+            {/* The role stays visible at every width because it is the part that
+                answers "why can I not see this"; the address folds away first. */}
+            <span className="hidden max-w-[16rem] truncate text-xs text-white/85 lg:inline">
+              {currentUser.email}
+            </span>
+            <span className="whitespace-nowrap rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium">
+              {ROLE_LABELS[currentUser.role]}
+            </span>
+          </span>
           <button
             type="button"
             onClick={() => void signOut()}
@@ -74,6 +91,12 @@ export default function Navbar() {
       </div>
       {isMenuOpen && (
         <nav className="border-t border-white/20 px-4 pb-3 md:hidden">
+          <div className="border-b border-white/20 py-2">
+            <p className="truncate text-sm">{currentUser.email}</p>
+            <p className="text-xs text-white/70">
+              {ROLE_LABELS[currentUser.role]}
+            </p>
+          </div>
           {visibleEntries.map((entry) => (
             <NavLink
               key={entry.to}

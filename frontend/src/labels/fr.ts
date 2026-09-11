@@ -49,3 +49,17 @@ const ERROR_MESSAGES: Record<string, string> = {
 export function describeApiError(code: string, fallbackMessage: string): string {
   return ERROR_MESSAGES[code] ?? fallbackMessage;
 }
+
+// An empty list should say why it is empty. "Aucune note" leaves an accountant
+// wondering whether the application is broken, when in fact no manager has
+// validated anything yet.
+const EMPTY_LIST_MESSAGES: Record<Role, string> = {
+  EMPLOYEE: "Vous n'avez pas encore déclaré de note de frais.",
+  MANAGER: "Aucune note de frais n'a été déclarée pour le moment.",
+  ACCOUNTING:
+    "Aucune note validée à traiter pour le moment. Une note n'apparaît ici qu'une fois validée par un manager.",
+};
+
+export function describeEmptyReportList(role: Role): string {
+  return EMPTY_LIST_MESSAGES[role];
+}

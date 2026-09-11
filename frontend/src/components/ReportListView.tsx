@@ -5,6 +5,7 @@ import StatusBadge from "./StatusBadge";
 interface ReportListViewProps {
   reports: ReportSummary[];
   onSelect: (reportId: number) => void;
+  emptyMessage: string;
   isOwnerColumnVisible?: boolean;
 }
 
@@ -14,12 +15,13 @@ const HEADER_CLASSES =
 export default function ReportListView({
   reports,
   onSelect,
+  emptyMessage,
   isOwnerColumnVisible = false,
 }: ReportListViewProps) {
   if (reports.length === 0) {
     return (
-      <p className="rounded border border-dashed border-sheet-border bg-white p-8 text-center text-muted">
-        Aucune note de frais à afficher.
+      <p className="mx-auto max-w-md rounded border border-dashed border-sheet-border bg-white p-8 text-center text-muted">
+        {emptyMessage}
       </p>
     );
   }
